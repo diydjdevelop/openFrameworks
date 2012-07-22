@@ -676,3 +676,71 @@ int ofSerial::available(){
 	return numBytes;
 }
 
+//-------------------------------------------------------------
+int ofSerial::getDtr() {
+    
+    int status;
+    
+    if(ioctl(fd, TIOCMGET, &status) == -1) {
+        ofLog(OF_LOG_ERROR, "ofSerial::setDTR >> get dtr failed: %s\n", strerror(errno));
+        return -1;
+    } else {
+        if(status & TIOCM_DTR) {
+            //            cout << "current = true" << endl;
+            return true;
+        } else {
+            //            cout << "current = false" << endl;
+            return false;
+        }
+    }
+}
+
+//-------------------------------------------------------------
+int ofSerial::setDtr(bool _bState) {
+    
+    /**
+     * set DTR pin HIGH or LOW
+     * for parallax rfid reader to output new reading
+     * http://www.unix.com/programming/29151-how-set-dsr-pin-using-c-code.html
+     * >> had to switch TIOCMBIS and TIOCMBIC state to get on/off DTR right on parallax RFID
+     * http://en.m.wikibooks.org/wiki/Serial_Programming/Unix_V7
+     */
+    
+    //---------------------------------------------
+#if defined( TARGET_OSX ) || defined( TARGET_LINUX )
+    
+    //--only change state if it is different from current state
+    if(_bState != (bool) getDtr()) {
+        
+        int controlbits = TIOCM_DTR;
+        
+        if(_bState) {
+            //            ofLog(OF_LOG_NOTICE, "ofSerial::setDTR( on )"); 
+            return ( ioctl(fd, TIOCMBIS, &controlbits) );
+        } else {
+            //            ofLog(OF_LOG_NOTICE, "ofSerial::setDTR( off )");
+            return ( ioctl(fd, TIOCMBIC, &controlbits) );
+        }
+    } else {
+        //        ofLog(OF_LOG_NOTICE, "ofSerial:: dtr state is already set to: %i", (int) _bState);
+    }
+#endif
+    
+    //---------------------------------------------
+    /**
+     * not tested yet on windows
+     * but should be something like this
+     * search on google for: c++ win32 dtr EscapeCommFunction DTR flow control
+     * http://www.connecttech.com/KnowledgeDatabase/kdb229.htm
+     * http://winapi.freetechsecrets.com/win32/WIN32EscapeCommFunction.htm
+     * http://msdn.microsoft.com/en-us/library/windows/desktop/aa363254%28v=vs.85%29.aspx
+     */
+#ifdef TARGET_WIN32
+    if(_bState) {
+        return bool EscapeCommFunction(hComm, SETDTR);
+    } else {
+        return bool EscapeCommFunction(hComm, CLRDTR);
+    }
+#endif
+}
+

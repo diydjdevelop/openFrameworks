@@ -54,8 +54,10 @@ class ofSerial {
     
 			bool 			bVerbose;
 			void 			setVerbose(bool bLoudmouth) { bVerbose = bLoudmouth; };
-
-			
+            
+            //--set dtr
+            int             setDtr(bool _bState);
+            int             getDtr();
 
 	protected:
 			void			buildDeviceList();
